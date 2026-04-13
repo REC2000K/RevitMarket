@@ -1,17 +1,18 @@
-import type { Family, KnowledgeArticle } from '@/types';
+import type { KnowledgeArticle } from '@/types';
 
 // Keys for localStorage
 const KEYS = {
-  FAMILIES: 'revit_market_families',
   ARTICLES: 'revit_market_articles',
   USERS: 'revit_market_users',
   DOWNLOADS: 'revit_market_downloads',
   CURRENT_USER: 'revit_market_current_user',
+  RATINGS: 'revit_market_ratings',
 };
-const DATA_VERSION = '3';
+
+const DATA_VERSION = '4';
 
 // Default data
-import { families as defaultFamilies, knowledgeArticles as defaultArticles } from '@/data/families';
+import { knowledgeArticles as defaultArticles } from '@/data/families';
 
 // Users type
 export interface User {
@@ -24,11 +25,17 @@ export interface User {
   createdAt: string;
 }
 
-// Initialize storage with default data
-export function initializeStorage() {
-  // ВСЕГДА перезаписываем families
-  localStorage.setItem(KEYS.FAMILIES, JSON.stringify(defaultFamilies));
+// 🔧 Безопасный парсинг
+function safeParse<T>(value: string | null, fallback: T): T {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
+// 🚀 Инициализация (БЕЗ families)
+export function initializeStorage() {
   const version = localStorage.getItem('revit_market_version');
 
   if (version !== DATA_VERSION) {
@@ -47,58 +54,16 @@ export function initializeStorage() {
     localStorage.setItem(KEYS.ARTICLES, JSON.stringify(defaultArticles));
     localStorage.setItem(KEYS.USERS, JSON.stringify(defaultUsers));
     localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify({}));
+    localStorage.setItem(KEYS.RATINGS, JSON.stringify({}));
+
     localStorage.setItem('revit_market_version', DATA_VERSION);
   }
 }
 
+//
+// 📚 ARTICLES
+//
 
-// Families
-function safeParse<T>(value: string | null, fallback: T): T {
-  try {
-    return value ? JSON.parse(value) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function getFamilies(): Family[] {
-  return safeParse(
-    localStorage.getItem(KEYS.FAMILIES),
-    defaultFamilies
-  );
-}
-
-export function setFamilies(families: Family[]) {
-  localStorage.setItem(KEYS.FAMILIES, JSON.stringify(families));
-}
-
-export function addFamily(family: Family) {
-  const families = getFamilies();
-
-  const updated = [...families, family];
-
-  setFamilies(updated);
-}
-
-export function updateFamily(id: string, updates: Partial<Family>) {
-  const families = getFamilies();
-
-  const updated = families.map((f) =>
-    f.id === id ? { ...f, ...updates } : f
-  );
-
-  setFamilies(updated);
-}
-
-export function deleteFamily(id: string) {
-  const families = getFamilies();
-
-  const updated = families.filter((f) => f.id !== id);
-
-  setFamilies(updated);
-}
-
-// Articles
 export function getArticles(): KnowledgeArticle[] {
   return safeParse(
     localStorage.getItem(KEYS.ARTICLES),
@@ -119,6 +84,7 @@ export function addArticle(article: KnowledgeArticle) {
 export function updateArticle(id: string, updates: Partial<KnowledgeArticle>) {
   const articles = getArticles();
   const index = articles.findIndex((a) => a.id === id);
+
   if (index !== -1) {
     articles[index] = { ...articles[index], ...updates };
     setArticles(articles);
@@ -130,7 +96,10 @@ export function deleteArticle(id: string) {
   setArticles(articles.filter((a) => a.id !== id));
 }
 
-// Users
+//
+// 👤 USERS
+//
+
 export function getUsers(): User[] {
   return safeParse(localStorage.getItem(KEYS.USERS), []);
 }
@@ -146,16 +115,17 @@ export function addUser(user: User) {
 }
 
 export function findUserByLogin(login: string): User | undefined {
-  const users = getUsers();
-  return users.find((u) => u.login === login);
+  return getUsers().find((u) => u.login === login);
 }
 
 export function findUserByEmail(email: string): User | undefined {
-  const users = getUsers();
-  return users.find((u) => u.email === email);
+  return getUsers().find((u) => u.email === email);
 }
 
-// Current User Session
+//
+// 🔐 CURRENT USER
+//
+
 export function getCurrentUser(): User | null {
   return safeParse(localStorage.getItem(KEYS.CURRENT_USER), null);
 }
@@ -168,7 +138,13 @@ export function setCurrentUser(user: User | null) {
   }
 }
 
-// Downloads counter
+//
+// ⬇️ DOWNLOADS
+//
+
+export function getDownloads(): Record<string, number> {
+  return safeParse(localStorage.getItem(KEYS.DOWNLOADS), {});
+}
 
 export function recordDownload(familyId: string) {
   const downloads = getDownloads();
@@ -178,11 +154,27 @@ export function recordDownload(familyId: string) {
   localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(downloads));
 }
 
-export function getDownloads(): Record<string, number> {
-  return safeParse(localStorage.getItem(KEYS.DOWNLOADS), {});
+export function getFamilyDownloads(familyId: string): number {
+  return getDownloads()[familyId] || 0;
 }
 
-export function getFamilyDownloads(familyId: string): number {
-  const downloads = getDownloads();
-  return downloads[familyId] || 0;
+//
+// ⭐ RATINGS (опционально, но уже готово)
+//
+
+export function getRatings(): Record<string, number> {
+  return safeParse(localStorage.getItem(KEYS.RATINGS), {});
 }
+
+export function setRating(familyId: string, rating: number) {
+  const ratings = getRatings();
+
+  ratings[familyId] = rating;
+
+  localStorage.setItem(KEYS.RATINGS, JSON.stringify(ratings));
+}
+
+export function getFamilyRating(familyId: string): number {
+  return getRatings()[familyId] || 0;
+}
+

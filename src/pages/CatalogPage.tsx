@@ -1,15 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, SlidersHorizontal, Grid3X3, List, X } from 'lucide-react';
 
-import { categories } from '@/data/families';
+import { families as defaultFamilies, categories } from '@/data/families';
 import { FamilyCard } from '@/components/FamilyCard';
 import { FilterSidebar } from '@/components/FilterSidebar';
 import { CategoryPill } from '@/components/CategoryPill';
 import { Button } from '@/components/ui/button';
 
 import {
-  getFamilies,
   recordDownload,
+  getDownloads,
 } from '@/store/localStorage';
 
 import type { FilterState, Family, ViewMode } from '@/types';
@@ -17,6 +17,16 @@ import type { FilterState, Family, ViewMode } from '@/types';
 interface CatalogPageProps {
   onFamilyClick: (family: Family) => void;
   initialCategory?: string | null;
+}
+
+// 🔥 Обогащаем данные (downloads из localStorage)
+function getEnrichedFamilies(): Family[] {
+  const downloads = getDownloads();
+
+  return defaultFamilies.map((family) => ({
+    ...family,
+    downloads: downloads[family.id] || 0,
+  }));
 }
 
 export function CatalogPage({
@@ -35,9 +45,9 @@ export function CatalogPage({
     searchQuery: '',
   });
 
-  // 📦 Загрузка из localStorage при старте
+  // 📦 Загружаем данные из families.ts + localStorage
   useEffect(() => {
-    setFamilies(getFamilies());
+    setFamilies(getEnrichedFamilies());
   }, []);
 
   // 🔍 Фильтрация
@@ -94,12 +104,12 @@ export function CatalogPage({
     }));
   };
 
-  // ⬇️ DOWNLOAD (ключевая часть)
+  // ⬇️ DOWNLOAD
   const handleDownload = (family: Family) => {
     recordDownload(family.id);
 
-    // 🔥 ОБНОВЛЯЕМ UI после изменения localStorage
-    setFamilies(getFamilies());
+    // 🔥 Обновляем данные после скачивания
+    setFamilies(getEnrichedFamilies());
   };
 
   return (
@@ -264,3 +274,4 @@ export function CatalogPage({
     </div>
   );
 }
+
