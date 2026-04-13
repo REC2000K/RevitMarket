@@ -8,7 +8,7 @@ const KEYS = {
   DOWNLOADS: 'revit_market_downloads',
   CURRENT_USER: 'revit_market_current_user',
 };
-const DATA_VERSION = '2';
+const DATA_VERSION = '3';
 
 // Default data
 import { families as defaultFamilies, knowledgeArticles as defaultArticles } from '@/data/families';
@@ -26,6 +26,9 @@ export interface User {
 
 // Initialize storage with default data
 export function initializeStorage() {
+  // ВСЕГДА перезаписываем families
+  localStorage.setItem(KEYS.FAMILIES, JSON.stringify(defaultFamilies));
+
   const version = localStorage.getItem('revit_market_version');
 
   if (version !== DATA_VERSION) {
@@ -41,7 +44,6 @@ export function initializeStorage() {
       },
     ];
 
-    localStorage.setItem(KEYS.FAMILIES, JSON.stringify(defaultFamilies));
     localStorage.setItem(KEYS.ARTICLES, JSON.stringify(defaultArticles));
     localStorage.setItem(KEYS.USERS, JSON.stringify(defaultUsers));
     localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify({}));
