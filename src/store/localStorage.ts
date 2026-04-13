@@ -8,6 +8,7 @@ const KEYS = {
   DOWNLOADS: 'revit_market_downloads',
   CURRENT_USER: 'revit_market_current_user',
 };
+const DATA_VERSION = '2';
 
 // Default data
 import { families as defaultFamilies, knowledgeArticles as defaultArticles } from '@/data/families';
@@ -25,14 +26,9 @@ export interface User {
 
 // Initialize storage with default data
 export function initializeStorage() {
-  if (!localStorage.getItem(KEYS.FAMILIES)) {
-    localStorage.setItem(KEYS.FAMILIES, JSON.stringify(defaultFamilies));
-  }
-  if (!localStorage.getItem(KEYS.ARTICLES)) {
-    localStorage.setItem(KEYS.ARTICLES, JSON.stringify(defaultArticles));
-  }
-  if (!localStorage.getItem(KEYS.USERS)) {
-    // Create default admin user
+  const version = localStorage.getItem('revit_market_version');
+
+  if (version !== DATA_VERSION) {
     const defaultUsers: User[] = [
       {
         id: '1',
@@ -44,17 +40,30 @@ export function initializeStorage() {
         createdAt: new Date().toISOString(),
       },
     ];
+
+    localStorage.setItem(KEYS.FAMILIES, JSON.stringify(defaultFamilies));
+    localStorage.setItem(KEYS.ARTICLES, JSON.stringify(defaultArticles));
     localStorage.setItem(KEYS.USERS, JSON.stringify(defaultUsers));
-  }
-  if (!localStorage.getItem(KEYS.DOWNLOADS)) {
     localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify({}));
+    localStorage.setItem('revit_market_version', DATA_VERSION);
   }
 }
 
+
 // Families
+function safeParse<T>(value: string | null, fallback: T): T {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function getFamilies(): Family[] {
-  const data = localStorage.getItem(KEYS.FAMILIES);
-  return data ? JSON.parse(data) : defaultFamilies;
+  return safeParse(
+    localStorage.getItem(KEYS.FAMILIES),
+    defaultFamilies
+  );
 }
 
 export function setFamilies(families: Family[]) {
@@ -63,28 +72,36 @@ export function setFamilies(families: Family[]) {
 
 export function addFamily(family: Family) {
   const families = getFamilies();
-  families.push(family);
-  setFamilies(families);
+
+  const updated = [...families, family];
+
+  setFamilies(updated);
 }
 
 export function updateFamily(id: string, updates: Partial<Family>) {
   const families = getFamilies();
-  const index = families.findIndex((f) => f.id === id);
-  if (index !== -1) {
-    families[index] = { ...families[index], ...updates };
-    setFamilies(families);
-  }
+
+  const updated = families.map((f) =>
+    f.id === id ? { ...f, ...updates } : f
+  );
+
+  setFamilies(updated);
 }
 
 export function deleteFamily(id: string) {
   const families = getFamilies();
-  setFamilies(families.filter((f) => f.id !== id));
+
+  const updated = families.filter((f) => f.id !== id);
+
+  setFamilies(updated);
 }
 
 // Articles
 export function getArticles(): KnowledgeArticle[] {
-  const data = localStorage.getItem(KEYS.ARTICLES);
-  return data ? JSON.parse(data) : defaultArticles;
+  return safeParse(
+    localStorage.getItem(KEYS.ARTICLES),
+    defaultArticles
+  );
 }
 
 export function setArticles(articles: KnowledgeArticle[]) {
@@ -113,8 +130,7 @@ export function deleteArticle(id: string) {
 
 // Users
 export function getUsers(): User[] {
-  const data = localStorage.getItem(KEYS.USERS);
-  return data ? JSON.parse(data) : [];
+  return safeParse(localStorage.getItem(KEYS.USERS), []);
 }
 
 export function setUsers(users: User[]) {
@@ -139,8 +155,7 @@ export function findUserByEmail(email: string): User | undefined {
 
 // Current User Session
 export function getCurrentUser(): User | null {
-  const data = localStorage.getItem(KEYS.CURRENT_USER);
-  return data ? JSON.parse(data) : null;
+  return safeParse(localStorage.getItem(KEYS.CURRENT_USER), null);
 }
 
 export function setCurrentUser(user: User | null) {
@@ -152,26 +167,17 @@ export function setCurrentUser(user: User | null) {
 }
 
 // Downloads counter
+
 export function recordDownload(familyId: string) {
   const downloads = getDownloads();
-  if (!downloads[familyId]) {
-    downloads[familyId] = 0;
-  }
-  downloads[familyId]++;
+
+  downloads[familyId] = (downloads[familyId] || 0) + 1;
+
   localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(downloads));
-  
-  // Also update family download count
-  const families = getFamilies();
-  const family = families.find((f) => f.id === familyId);
-  if (family) {
-    family.downloads++;
-    setFamilies(families);
-  }
 }
 
 export function getDownloads(): Record<string, number> {
-  const data = localStorage.getItem(KEYS.DOWNLOADS);
-  return data ? JSON.parse(data) : {};
+  return safeParse(localStorage.getItem(KEYS.DOWNLOADS), {});
 }
 
 export function getFamilyDownloads(familyId: string): number {
