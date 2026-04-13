@@ -188,14 +188,20 @@ export function FamilyDetailPage({ family, onBack, onFamilyClick }: FamilyDetail
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-24">
-              <Button
-                size="lg"
-                className="w-full bg-primary hover:bg-primary/90 text-white mb-4"
-                onClick={handleDownload}
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Скачать семейство
-              </Button>
+              <a
+                  href={family.downloadPath}
+                  download
+                  onClick={(e) => e.stopPropagation()}
+                >
+                <Button
+                  size="lg"
+                  className="w-full bg-primary hover:bg-primary/90 text-white mb-4"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Скачать семейство
+                </Button>
+              </a>
               <p className="text-center text-sm text-[#6B7280]">
                 {family.fileSize} · {family.fileFormat.toUpperCase()}
               </p>

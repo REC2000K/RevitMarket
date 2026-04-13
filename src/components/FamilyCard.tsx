@@ -94,14 +94,20 @@ export function FamilyCard({ family, onClick, onDownload }: FamilyCardProps) {
         </div>
 
         {/* Button */}
-        <Button
-          variant="outline"
-          className="w-full border-primary text-primary hover:bg-primary hover:text-white transition-colors"
-          onClick={handleDownload}
+        <a
+          href={family.downloadPath}
+          download
+          onClick={(e) => e.stopPropagation()}
         >
-          <Download className="w-4 h-4 mr-2" />
-          Скачать
-        </Button>
+          <Button
+            variant="outline"
+            className="w-full border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+            onClick={handleDownload}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Скачать
+          </Button>
+        </a>
       </div>
     </div>
   );

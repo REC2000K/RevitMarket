@@ -14,6 +14,7 @@ export interface Family {
   tags: string[];
   dateAdded: string;
   preview?: string[];
+  downloadPath: string,
 }
 
 export interface Category {
